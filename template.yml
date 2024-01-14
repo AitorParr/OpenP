@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: openproject-template
+objects:
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: openproject-data
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 10Gi
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: openproject-deployment
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: openproject
+    template:
+      metadata:
+        labels:
+          app: openproject
+      spec:
+        containers:
+        - name: openproject
+          image: openproject/openproject:latest
+          ports:
+          - containerPort: 8080
+          volumeMounts:
+          - name: openproject-data
+            mountPath: /var/openproject
+          env:
+          - name: SECRET_KEY_BASE
+            value: "your_secret_key"  # Reemplaza con tu propia clave secreta
+          - name: OPENPROJECT_DATABASE_USERNAME
+            value: "db_user"  # Reemplaza con el nombre de usuario de la base de datos
+          - name: OPENPROJECT_DATABASE_PASSWORD
+            value: "db_password"  # Reemplaza con la contraseña de la base de datos
+          - name: OPENPROJECT_DATABASE_HOST
+            value: "db_host"  # Reemplaza con el host de la base de datos
+          - name: OPENPROJECT_DATABASE_PORT
+            value: "db_port"  # Reemplaza con el puerto de la base de datos
+          - name: OPENPROJECT_DATABASE_NAME
+            value: "db_name"  # Reemplaza con el nombre de la base de datos
+          - name: OPENPROJECT_HOST
+            value: "openproject.example.com"  # Reemplaza con el host de OpenProject
+          - name: OPENPROJECT_PROTOCOL
+            value: "http"  # Reemplaza con el protocolo utilizado (http o https)
+          - name: OPENPROJECT_PORT
+            value: "80"  # Reemplaza con el puerto en el que estará disponible OpenProject
+        resources:
+          limits:
+            memory: 1Gi
+        volumes:
+        - name: openproject-data
+          persistentVolumeClaim:
+            claimName: openproject-data
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: openproject-service
+    labels:
+      app: openproject
+  spec:
+    selector:
+      app: openproject
+    ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
